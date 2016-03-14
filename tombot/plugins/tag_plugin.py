@@ -45,7 +45,18 @@ def unsubscribe_cb(bot, message, *args, **kwargs):
         else:
             return 'Success!'
     else:
-        return 'Tag does not exist!'
+        return 'Tag "{}" does not exist!'.format(tagname)
+
+@Command('unsubscribe-all')
+@reply_directly
+def unsubscribe_all_cb(bot, message, *args, **kwargs):
+    ''' Unsubscribe immediately from all tags. '''
+    senderjid = determine_sender(message)
+
+    bot.cursor.execute('DELETE FROM tag_subscriptions WHERE jid=?',
+                       (senderjid,))
+
+    return 'Successfully unsubscribed from {} tags.'.format(bot.cursor.rowcount)
 
 # Helper functions
 def tag_to_id(bot, tagname, create=True):
