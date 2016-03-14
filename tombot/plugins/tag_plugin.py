@@ -18,17 +18,7 @@ def subscribe_cb(bot, message, *args, **kwargs):
     if ' ' in tagname:
         return 'Tags must not contain spaces!'
 
-    bot.cursor.execute('SELECT id FROM tags WHERE name LIKE ?',
-                       (tagname,))
-    result = bot.cursor.fetchone()
-    tagid = None
-    if not result:
-        bot.cursor.execute('INSERT INTO tags (name) VALUES (?)',
-                           (tagname,))
-        tagid = bot.cursor.lastrowid
-        LOGGER.info('%s created.', tagname)
-    else:
-        tagid = result[0]
+    tagid = tag_to_id(bot, tagname)
 
     try:
         bot.cursor.execute('INSERT INTO tag_subscriptions (id, jid) VALUES (?,?)',
@@ -37,3 +27,43 @@ def subscribe_cb(bot, message, *args, **kwargs):
         return 'You are already subscribed to that tag!'
 
     return 'Success!'
+
+@Command('unsubscribe')
+@reply_directly
+def unsubscribe_cb(bot, message, *args, **kwargs):
+    ''' Unsubscribe from a tag. '''
+    senderjid = determine_sender(message)
+    tagname = extract_query(message)
+
+    tagid = tag_to_id(bot, tagname, False)
+    if tagid:
+        bot.cursor.execute('DELETE FROM tag_subscriptions WHERE id=? AND jid=?',
+                           (tagid, senderjid))
+        result = bot.cursor.rowcount
+        if result == 0:
+            return 'You weren\'t even subscribed!'
+        else:
+            return 'Success!'
+    else:
+        return 'Tag does not exist!'
+
+# Helper functions
+def tag_to_id(bot, tagname, create=True):
+    '''
+    Translates a tagname to a tag id.
+
+    When create=True, the tag is created if it doesn't exist, on create=False, None is returned.
+    '''
+    bot.cursor.execute('SELECT id FROM tags WHERE name LIKE ?',
+                       (tagname,))
+    result = bot.cursor.fetchone()
+    tagid = None
+    if not result and create:
+        bot.cursor.execute('INSERT INTO tags (name) VALUES (?)',
+                           (tagname,))
+        tagid = bot.cursor.lastrowid
+        LOGGER.info('%s created.', tagname)
+    elif result:
+        tagid = result[0]
+
+    return tagid
