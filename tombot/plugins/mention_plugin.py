@@ -79,7 +79,7 @@ def update_lastseen_cb(bot, message, *args, **kwargs):
     currenttime = (datetime.datetime.now() - datetime.datetime(1970, 1, 1)).total_seconds()
     LOGGER.debug('Updating %s\'s last seen.', author)
     bot.cursor.execute('UPDATE users SET lastactive = ?, message = ? WHERE jid = ?',
-                       (currenttime, message.getBody().decode('utf-8'), author))
+                       (currenttime, message.getBody(), author))
     bot.conn.commit()
 
 @Command(['timeout', 'settimeout'], 'mentions')
